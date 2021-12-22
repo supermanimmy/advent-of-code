@@ -56,34 +56,42 @@ To guarantee victory against the giant squid, figure out which board will win fi
 
 To begin, get your puzzle input.
 """
-import re
-file = "input4.txt"
-def get_numbers(file):
+import numpy as np
 
-    """
-    This function takes in a file, and returns the first line (numbers for bingo)
-    """
-    numbers = []
-    with open(file, "r") as f:
-        first_line = f.readlines()[0]
-        numbers.append(re.findall(r'\d+', first_line))
-        f.close()
-        return numbers
+class BingoCard:
+    def __init__(self, cardRows) -> None:
+        rows = [cr.replace('  ', ' ').split(' ') for cr in cardRows]
+        self.grid = np.array(rows, dtype = int)
 
-        
-def string_to_int(numbers):
-    number = numbers[0]
+    def markCard(self, number):
+        self.grid[self.grid == number] = -1
 
-    number_holder = []
-    for i in number:
-        number_holder.append(int(i))
-    return number_holder
+    def getScore(self, lastCalled):
+        return np.sum((self.grid != -1) * self.grid) * lastCalled
 
-def get_int_numbers(file):
-    numbers = get_numbers(file)
-    int_numbers = string_to_int(numbers)
-    return int_numbers
+    def isWinner(self):
+        if any(np.sum(self.grid, axis=0) == -5):
+            return True
+        if any(np.sum(self.grid, axis = 1) == -5):
+            return True
+        return False
 
-#Gets our numbers to call as int.
-print(get_int_numbers(file))
+# read numbers in first line, and remove the lines from the dataset
+lines = [line.strip() for line in open('input4.txt', 'r').readlines()]
+numbers = [int(x) for x in lines[0].strip().split(',')]
+lines = lines[2:]
 
+# read bingo cards
+bingoCards = [BingoCard(lines[i*6:i*6+5])for i in range(0, len(lines) // 6)]
+
+# run the bingo game
+scores = []
+for number in numbers:
+    # mark all the cards
+    [card.markCard(number) for card in bingoCards]
+    # find all the winner cards and remove them 
+    scores += [card.getScore(number) for card in bingoCards if card.isWinner()]
+    bingoCards = [card for card in bingoCards if not card.isWinner()]
+    
+print('part 1:', scores[0])
+print('part 2:', scores[-1])
